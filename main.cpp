@@ -21,11 +21,12 @@ const std::vector<double> _gamma = {0,0,0,0,0,0,0,0,0,0,0,0.684,0.829,1.419,0.81
 
 int main(){
     Eigen::Map<const Eigen::VectorXd> n_w(&(_n[0]), _n.size()), t_w(&(_t[0]), _t.size()), d_w(&(_d[0]), _d.size());
-    Eigen::Map<const Eigen::VectorXd> l_w(&(_l[0]), _l.size()), c_w(&(_c[0]), _c.size()) ;
+    Eigen::Map<const Eigen::VectorXd> l_w(&(_l[0]), _l.size());
+    Eigen::Map<const Eigen::VectorXd> c_w(&(_c[0]), _c.size());
     Eigen::Map<const Eigen::VectorXd> beta_w(&(_beta[0]), _beta.size()), epsilon_w(&(_epsilon[0]), _epsilon.size()),
                                       eta_w(&(_eta[0]), _eta.size()), gamma_w(&(_gamma[0]), _gamma.size());
     
-    long N = 1000000; double summer = 0;
+    long N = 10000000; double summer = 0;
     auto startTime = std::chrono::system_clock::now();
     
     for (auto i = 0; i < N; ++i){
@@ -33,14 +34,14 @@ int main(){
         Eigen::ArrayXd delta_minus_epsilon = delta-epsilon_w.array(), tau_minus_gamma = tau-gamma_w.array(), delta_to_l = Eigen::pow(delta, l_w.array());
         
         Eigen::VectorXd umat = -c_w.array()*delta_to_l - eta_w.array()*delta_minus_epsilon.square() - beta_w.array()*tau_minus_gamma.square();
-        Eigen::VectorXd delta_du_ddelta = -c_w.array()*l_w.array()*delta_to_l-2*delta*eta_w.array()*delta_minus_epsilon;
+        Eigen::VectorXd delta_du_ddelta = -c_w.array()*l_w.array()*delta_to_l -2*delta*eta_w.array()*delta_minus_epsilon;
         Eigen::VectorXd tau_du_dtau = -2*tau*beta_w.array()*tau_minus_gamma;
         
-        Eigen::VectorXd armat = n_w.array()*Eigen::pow(2, (t_w*log2tau + d_w*log2delta + umat/M_LN2).array())*umat.array();
+        Eigen::VectorXd armat = n_w.array()*Eigen::pow(2, (t_w*log2tau + d_w*log2delta + umat/M_LN2).array());
         
-        double A00 = (armat).sum();
-        double A01 = (armat.array()*(delta_du_ddelta.array()+d_w.array())).sum();
-        double A10 = (armat.array()*(tau_du_dtau.array()+t_w.array())).sum();
+        double A00 = armat.sum();
+        double A01 = (armat.array()*(delta_du_ddelta.array() + d_w.array())).sum();
+        double A10 = (armat.array()*(tau_du_dtau.array() + t_w.array())).sum();
         summer += A00 + A01 + A10;
     }
     auto elap = std::chrono::duration<double>(std::chrono::system_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
