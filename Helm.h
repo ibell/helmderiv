@@ -55,6 +55,8 @@ private:
         mask_delta_ld = Eigen::Array<bool,Eigen::Dynamic,1>::Constant(coeffs.n.size(), use_delta_ld);
         mask_gauss_tau = Eigen::Array<bool,Eigen::Dynamic,1>::Constant(coeffs.n.size(), use_gauss_tau);
         mask_tau_lt = Eigen::Array<bool,Eigen::Dynamic,1>::Constant(coeffs.n.size(), use_tau_lt);
+        delta_to_ld = Eigen::ArrayXd::Constant(coeffs.n.size(), 0);
+        tau_to_lt = Eigen::ArrayXd::Constant(coeffs.n.size(), 0);
     };
     
 public:
@@ -181,6 +183,6 @@ public:
         derivs.A30 = (Ntau_max >=3) ? (armat*B3tau).sum() : 0;
         derivs.A21 = (Ntau_max >= 2 && Ndelta_max >=1) ? (armat*B2tau*B1delta).sum() : 0;
         derivs.A12 = (Ntau_max >= 1 && Ndelta_max >=2) ? (armat*B1tau*B2delta).sum() : 0;
-        derivs.A03 = (Ndelta_max >=2) ? (armat*B3delta).sum() : 0;
+        derivs.A03 = (Ndelta_max >=3) ? (armat*B3delta).sum() : 0;
     };
 };
