@@ -1,5 +1,6 @@
 
 #include "Helm.h"
+#include "mixderiv.h"
 
 #include <iostream>
 #include <chrono>
@@ -24,32 +25,44 @@ int main(){
     coeff.eta.resize(18); coeff.eta << 0,0,0,0,0,0,0,0,0,0,0,0.963,1.977,1.917,2.307,2.546,3.28,14.6;
     coeff.gamma.resize(18); coeff.gamma << 0,0,0,0,0,0,0,0,0,0,0,0.684,0.829,1.419,0.817,1.5,1.426,1.093;
 
-    auto startTime = std::chrono::system_clock::now();
+    auto startTime = std::chrono::high_resolution_clock::now();
     GenHelmDeriv gen(coeff);
-    GenHelmDerivDerivs d;
     
-    long N = 10000000; double summer = 0;
+    Eigen::ArrayXd rhovec(0);
+    DerivativeMatrices mat;
+    GenHelmDerivDerivs d; // buffer
+    mat.resize(1);
     
-    for (auto ld_int : {true, false}){
-        summer = 0;
-        gen.all_ld_integers = ld_int;
-        startTime = std::chrono::system_clock::now();
-        for (auto i = 0; i < N; ++i){
-            gen.calc(0.8, 1.3e-2, d);
-            summer += d.A00 + d.A10 + d.A01 + d.A20 + d.A11 + d.A02 + d.A30 + d.A21 + d.A12 + d.A03;
+//    long N = 10;
+    long N = 10000000;
+    
+    for (auto ld_int : {true}){//, false}){
+        for (auto only_a_couple : {false}){//, true}){
+            for (auto only_derivs : {false}){
+                auto summer = 0.0;
+                gen.all_ld_integers = ld_int;
+                startTime = std::chrono::high_resolution_clock::now();
+                for (auto i = 0; i < N; ++i){
+                    if (only_a_couple){
+                        gen.calc(0.8, 1.3e-2, d, 1, 2);
+                    }
+                    else{
+                        gen.calc(0.8, 1.3e-2, d);
+                    }
+                    if (only_derivs){
+                        summer += d.A00 + d.A01 + d.A02;
+                    }
+                    else{
+                        CubicNativeDerivProvider cube_nat(d, mat, rhovec);
+                        MixDerivs mix(cube_nat);
+                        summer += mix.d2psi_drhoidrhoj__constT(0,0);
+                    }
+                }
+                auto elap = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
+                std::cout << std::setprecision(20) << summer/N << " " << elap << std::endl;
+            }
         }
-        auto elap = std::chrono::duration<double>(std::chrono::system_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
-        std::cout << std::setprecision(20) << summer/N << " " << elap << std::endl;
-
-        summer = 0;
-        gen.all_ld_integers = ld_int;
-        startTime = std::chrono::system_clock::now();
-        for (auto i = 0; i < N; ++i){
-            gen.calc(0.8, 1.3e-2, d, 1, 2);
-            summer += d.A00 + d.A10 + d.A01 + d.A20 + d.A11 + d.A02 + d.A30 + d.A21 + d.A12 + d.A03;
-        }
-        elap = std::chrono::duration<double>(std::chrono::system_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
-        std::cout << summer/N << " " << elap << std::endl;
     }
+    
     return EXIT_SUCCESS;
 }

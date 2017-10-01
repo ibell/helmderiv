@@ -1,3 +1,5 @@
+#ifndef helm_h
+#define helm_h
 
 #include "Eigen/Dense"
 #include <cmath>
@@ -13,8 +15,42 @@ struct GenHelmDerivCoeffs{
     Eigen::ArrayXi ld_as_int;
 };
 
-struct GenHelmDerivDerivs{
+class GenHelmDerivDerivs{
+public:
+    double tau,delta,T,Tr;
     double A00,A10,A01,A20,A11,A02,A30,A21,A12,A03;
+    double get_A(std::size_t itau, std::size_t idelta) const{
+        switch(itau){
+            case 0:
+                switch(idelta){
+                    case 0: return A00;
+                    case 1: return A01;
+                    case 2: return A02;
+                    case 3: return A03;
+                    default: throw -1;
+                }
+            case 1:
+                switch(idelta){
+                    case 0: return A10;
+                    case 1: return A11;
+                    case 2: return A12;
+                    default: throw -1;
+                }
+            case 2:
+                switch(idelta){
+                    case 0: return A20;
+                    case 1: return A21;
+                    default: throw -1;
+                }
+            case 3:
+                switch(idelta){
+                    case 0: return A30;
+                    default: throw -1;
+                }
+            default:
+                throw -1;
+        }
+    }
 };
 
 // From https://stackoverflow.com/a/5625446/1360263
@@ -66,6 +102,7 @@ public:
     
     void calc(const double tau, const double delta, GenHelmDerivDerivs &derivs, const std::size_t Ntau_max = 3, const std::size_t Ndelta_max = 3)
     {
+        derivs.tau = tau; derivs.delta = delta;
         const double log2tau = log2(tau), log2delta = log2(delta);
         
         // Gaussian difference vectors
@@ -186,3 +223,6 @@ public:
         derivs.A03 = (Ndelta_max >=3) ? (armat*B3delta).sum() : 0;
     };
 };
+
+
+#endif
