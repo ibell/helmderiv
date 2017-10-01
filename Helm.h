@@ -16,40 +16,18 @@ struct GenHelmDerivCoeffs{
 };
 
 class GenHelmDerivDerivs{
+private:
+    Eigen::MatrixXd m_A;
 public:
     double tau,delta,T,Tr;
-    double A00,A10,A01,A20,A11,A02,A30,A21,A12,A03;
-    double get_A(std::size_t itau, std::size_t idelta) const{
-        switch(itau){
-            case 0:
-                switch(idelta){
-                    case 0: return A00;
-                    case 1: return A01;
-                    case 2: return A02;
-                    case 3: return A03;
-                    default: throw -1;
-                }
-            case 1:
-                switch(idelta){
-                    case 0: return A10;
-                    case 1: return A11;
-                    case 2: return A12;
-                    default: throw -1;
-                }
-            case 2:
-                switch(idelta){
-                    case 0: return A20;
-                    case 1: return A21;
-                    default: throw -1;
-                }
-            case 3:
-                switch(idelta){
-                    case 0: return A30;
-                    default: throw -1;
-                }
-            default:
-                throw -1;
-        }
+    void resize(std::size_t itau, std::size_t idelta){
+        m_A.resize(itau, idelta);
+    }
+    void setA(std::size_t itau, std::size_t idelta, double val){
+        m_A(itau, idelta) = val;
+    }
+    double A(std::size_t itau, std::size_t idelta) const{
+        return m_A(itau,idelta);
     }
 };
 
@@ -104,6 +82,7 @@ public:
     {
         derivs.tau = tau; derivs.delta = delta;
         const double log2tau = log2(tau), log2delta = log2(delta);
+        derivs.resize(Ntau_max, Ndelta_max);
         
         // Gaussian difference vectors
         if (use_gauss_delta) { delta_minus_epsilon = delta - coeffs.epsilon; }
@@ -211,16 +190,16 @@ public:
         // Finally, carry out the calculations
         
         armat = coeffs.n*Eigen::pow(2, (coeffs.t*log2tau + coeffs.d*log2delta + umat*one_over_M_LN2).array());
-        derivs.A00 = armat.sum();
-        derivs.A10 = (Ntau_max >=1) ? (armat*B1tau).sum() : 0;
-        derivs.A01 = (Ndelta_max >= 1) ? (armat*B1delta).sum() : 0;
-        derivs.A20 = (Ntau_max >=2) ? (armat*B2tau).sum() : 0;
-        derivs.A11 = (Ntau_max >= 1 && Ndelta_max >= 1) ? (armat*B1tau*B1delta).sum() : 0;
-        derivs.A02 = (Ndelta_max >=2) ? (armat*B2delta).sum() : 0;
-        derivs.A30 = (Ntau_max >=3) ? (armat*B3tau).sum() : 0;
-        derivs.A21 = (Ntau_max >= 2 && Ndelta_max >=1) ? (armat*B2tau*B1delta).sum() : 0;
-        derivs.A12 = (Ntau_max >= 1 && Ndelta_max >=2) ? (armat*B1tau*B2delta).sum() : 0;
-        derivs.A03 = (Ndelta_max >=3) ? (armat*B3delta).sum() : 0;
+        derivs.setA(0,0, armat.sum());
+        derivs.setA(1,0, (Ntau_max >=1) ? (armat*B1tau).sum() : 0);
+        derivs.setA(0,1, (Ndelta_max >= 1) ? (armat*B1delta).sum() : 0);
+        derivs.setA(2,0, (Ntau_max >=2) ? (armat*B2tau).sum() : 0);
+        derivs.setA(1,1, (Ntau_max >= 1 && Ndelta_max >= 1) ? (armat*B1tau*B1delta).sum() : 0);
+        derivs.setA(0,2, (Ndelta_max >=2) ? (armat*B2delta).sum() : 0);
+        derivs.setA(3,0, (Ntau_max >=3) ? (armat*B3tau).sum() : 0);
+        derivs.setA(2,1, (Ntau_max >= 2 && Ndelta_max >=1) ? (armat*B2tau*B1delta).sum() : 0);
+        derivs.setA(1,2, (Ntau_max >= 1 && Ndelta_max >=2) ? (armat*B1tau*B2delta).sum() : 0);
+        derivs.setA(0,3, (Ndelta_max >=3) ? (armat*B3delta).sum() : 0);
     };
 };
 

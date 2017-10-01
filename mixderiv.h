@@ -62,7 +62,7 @@ public:
     CubicNativeDerivProvider(const GenHelmDerivDerivs & vals, const DerivativeMatrices & mats, const Eigen::ArrayXd &rhovec) : AbstractNativeDerivProvider(rhovec), m_vals(vals), m_mats(mats){};
     virtual double tau() const override{return m_vals.tau;};
     virtual double delta() const  override{return m_vals.delta;};
-    virtual double A(std::size_t itau, std::size_t idelta) const override{ return m_vals.get_A(itau,idelta); };
+    virtual double A(std::size_t itau, std::size_t idelta) const override{ return m_vals.A(itau,idelta); };
     virtual double Tr() const override{ return 1.0; };
     virtual double dTr_drhoi(std::size_t i) const override{ return 0.0; };
     virtual double d2Tr_drhoidrhoj(std::size_t i, std::size_t j) const  override{ return 0.0; };
@@ -80,7 +80,7 @@ public:
     const AbstractNativeDerivProvider &m_ders;
     const Eigen::ArrayXd &m_rhovec;
     const double R;
-    const double delta, tau, rhor, Tr, T,rho, rhorTr;
+    const double delta, tau, rhor, Tr, T, rho, rhorTr;
     MixDerivs(const AbstractNativeDerivProvider &ders)
     : m_ders(ders), m_rhovec(m_ders.rhovec()), R(8.3144598), delta(m_ders.delta()), tau(m_ders.tau()), rhor(m_ders.rhor()), Tr(m_ders.Tr()), T(Tr/tau), rho(rhor*delta), rhorTr(rhor*Tr)
     {};

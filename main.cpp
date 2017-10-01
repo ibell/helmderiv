@@ -36,21 +36,25 @@ int main(){
 //    long N = 10;
     long N = 10000000;
     
-    for (auto ld_int : {true}){//, false}){
-        for (auto only_a_couple : {false}){//, true}){
-            for (auto only_derivs : {false}){
+    for (auto ld_int : {true}){
+        for (auto only_a_couple : {false}){
+            for (auto only_derivs : {true, false}){
                 auto summer = 0.0;
                 gen.all_ld_integers = ld_int;
                 startTime = std::chrono::high_resolution_clock::now();
                 for (auto i = 0; i < N; ++i){
                     if (only_a_couple){
-                        gen.calc(0.8, 1.3e-2, d, 1, 2);
+                        gen.calc(0.8, 1.3, d, 1, 2);
                     }
                     else{
-                        gen.calc(0.8, 1.3e-2, d);
+                        gen.calc(0.8, 1.3, d);
                     }
                     if (only_derivs){
-                        summer += d.A00 + d.A01 + d.A02;
+                        summer += (  d.A(0,0)
+                                   + d.A(0,1) + d.A(1,0)
+                                   + d.A(0,2) + d.A(1,1) + d.A(2,0)
+                                   + d.A(0,3) + d.A(1,2) + d.A(2,1) + d.A(3,0)
+                                   );
                     }
                     else{
                         CubicNativeDerivProvider cube_nat(d, mat, rhovec);
@@ -63,6 +67,5 @@ int main(){
             }
         }
     }
-    
     return EXIT_SUCCESS;
 }
