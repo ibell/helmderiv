@@ -82,7 +82,7 @@ public:
     {
         derivs.tau = tau; derivs.delta = delta;
         const double log2tau = log2(tau), log2delta = log2(delta);
-        derivs.resize(Ntau_max, Ndelta_max);
+        derivs.resize(Ntau_max+1, Ndelta_max+1);
         
         // Gaussian difference vectors
         if (use_gauss_delta) { delta_minus_epsilon = delta - coeffs.epsilon; }
