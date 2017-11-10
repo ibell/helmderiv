@@ -30,10 +30,14 @@ public:
     virtual double A(std::size_t i, std::size_t j) const = 0;
     virtual double Tr() const = 0;
     virtual double dTr_drhoi(std::size_t i) const = 0;
+    virtual double dTr_dxi__constxj(std::size_t i) const = 0;
     virtual double d2Tr_drhoidrhoj(std::size_t i, std::size_t j) const = 0;
+    virtual double d2Tr_dxidxj(std::size_t i, std::size_t j) const = 0;
     virtual double rhor() const = 0;
     virtual double drhor_drhoi(std::size_t i) const = 0;
+    virtual double drhor_dxi__constxj(std::size_t i) const =  0; 
     virtual double d2rhor_drhoidrhoj(std::size_t i, std::size_t j) const = 0;
+    virtual double d2rhor_dxidxj(std::size_t i, std::size_t j) const = 0;
     virtual double dalpha_dxi__taudeltaxj(std::size_t i) const = 0;
     virtual double d2alpha_dxi_ddelta__consttauxj(std::size_t i) const = 0;
     virtual double d2alpha_dxi_dtau__constdeltaxj(std::size_t i) const = 0;
@@ -65,10 +69,14 @@ public:
     virtual double A(std::size_t itau, std::size_t idelta) const override{ return m_vals.A(itau,idelta); };
     virtual double Tr() const override{ return 1.0; };
     virtual double dTr_drhoi(std::size_t i) const override{ return 0.0; };
-    virtual double d2Tr_drhoidrhoj(std::size_t i, std::size_t j) const  override{ return 0.0; };
+    virtual double dTr_dxi__constxj(std::size_t i) const override{ return 0.0; };
+    virtual double d2Tr_drhoidrhoj(std::size_t i, std::size_t j) const override{ return 0.0; };
+    virtual double d2Tr_dxidxj(std::size_t i, std::size_t j) const override{ return 0.0; };
     virtual double rhor() const override{ return 1.0; };
     virtual double drhor_drhoi(std::size_t i) const override{ return 0.0; };
+    virtual double drhor_dxi__constxj(std::size_t i) const override { return 0.0; };
     virtual double d2rhor_drhoidrhoj(std::size_t i, std::size_t j) const override{ return 0.0; };
+    virtual double d2rhor_dxidxj(std::size_t i, std::size_t j) const override{ return 0.0; };
     virtual double dalpha_dxi__taudeltaxj(std::size_t i) const override{ return m_mats.dalpha_dxi__taudeltaxj(i);};
     virtual double d2alpha_dxi_ddelta__consttauxj(std::size_t i) const override{ return m_mats.d2alpha_dxi_ddelta__consttauxj(i);};
     virtual double d2alpha_dxi_dtau__constdeltaxj(std::size_t i) const override{ return m_mats.d2alpha_dxi_dtau__constdeltaxj(i);};
@@ -104,10 +112,14 @@ public:
         return (rho*(Kronecker(i,k)-Kronecker(j,k)) - 2*(rho*Kronecker(i,k)-m_rhovec(k)))/(rho*rho*rho);
     }
     double drhorTr_dxi__xj(std::size_t i) const{
-        return m_ders.Tr()*m_ders.drhor_drhoi(i) + m_ders.rhor()*m_ders.dTr_drhoi(i);
+        return m_ders.Tr()*m_ders.drhor_dxi__constxj(i) + m_ders.rhor()*m_ders.dTr_dxi__constxj(i);
     }
     double d2rhorTr_dxidxj__consttaudelta(std::size_t i, std::size_t j) const{
-        return 1.0; // TODO
+        return (m_ders.Tr()*m_ders.d2rhor_dxidxj(i,j)
+                + m_ders.dTr_dxi__constxj(j)*m_ders.drhor_dxi__constxj(i)
+                + m_ders.rhor()*m_ders.d2Tr_dxidxj(i,j)
+                + m_ders.drhor_dxi__constxj(j)*m_ders.dTr_dxi__constxj(i)
+                );
     }
     double dpsi_dxi__consttaudeltaxj(std::size_t i) const{
         return delta*R/tau*(A(0,0)*drhorTr_dxi__xj(i) + rhorTr*m_ders.dalpha_dxi__taudeltaxj(i));
@@ -167,7 +179,9 @@ public:
         for (auto n = 0; n < N; ++n){
             summer += d2psi_dxidxj__consttaudelta(m,n)*dxj_drhoi__constTrhoj(n,i);
         }
-        return d2psi_dxi_ddelta__consttauxj(m)*ddelta_drhoi__constTrhoj(i)+d2psi_dxi_dtau__constdeltaxj(m)*dtau_drhoi__constTrhoj(i) + summer;
+        return (d2psi_dxi_ddelta__consttauxj(m)*ddelta_drhoi__constTrhoj(i)
+                + d2psi_dxi_dtau__constdeltaxj(m)*dtau_drhoi__constTrhoj(i) 
+                + summer);
     }
     double dpsi_drhoi__constTrhoj(std::size_t i) const{
         double summer = 0;
