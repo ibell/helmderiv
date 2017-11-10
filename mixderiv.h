@@ -103,7 +103,8 @@ public:
         return m_ders.dTr_drhoi(i)*one_over_T;
     }
     double d2tau_drhoidrhoj__constT(std::size_t i, std::size_t j) const{
-        return m_ders.d2Tr_drhoidrhoj(i,j);
+        const double one_over_T = tau/m_ders.Tr();
+        return m_ders.d2Tr_drhoidrhoj(i,j)*one_over_T;
     }
     double dxj_drhoi__constTrhoj(std::size_t j, std::size_t i) const{
         return (rho*Kronecker(i,j)-m_rhovec(i))/(rho*rho);
