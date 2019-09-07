@@ -33,8 +33,8 @@ struct GenHelmDerivCoeffs{
     std::array<int,18> ld_as_int;
 };
 
-template <typename T>
-GenHelmDerivCoeffs<T> get_coeff(){
+template<typename T>
+auto get_coeff(){
     GenHelmDerivCoeffs<T> coeff;
     coeff.d = {4.0,1.0,1.0,2.0,2.0,1.0,3.0,6.0,6.0,2.0,3.0,1.0,1.0,1.0,2.0,2.0,4.0,1.0};
     coeff.n = {0.042910051,1.7313671,-2.4516524,0.34157466,-0.46047898,-0.66847295,0.20889705,0.19421381,-0.22917851,-0.60405866,0.066680654,0.017534618,0.33874242,0.22228777,-0.23219062,-0.09220694,-0.47575718,-0.017486824};
@@ -51,13 +51,17 @@ GenHelmDerivCoeffs<T> get_coeff(){
     return coeff;
 }
 
+template <typename T> auto sq(const T &x1){
+    return x1*x1;
+}
+
 // The function that depends on parameters for which derivatives are needed
-template <typename T>
-T alpha(T tau, T delta, const GenHelmDerivCoeffs<T>& c)
+template <typename T, typename T2>
+T alpha(T tau, T delta, const GenHelmDerivCoeffs<T2>& c)
 {
     T o = 0, lntau = log(tau), lndelta = log(delta);
     for (auto i = 0; i < c.d.size(); ++i){
-        o += c.n[i]*exp(c.d[i]*lndelta + c.t[i]*lntau + (-c.cd[i]*exp(c.ld[i]*log(delta)) - c.eta[i]*(delta-c.epsilon[i])*(delta-c.epsilon[i]) - c.beta[i]*(tau-c.gamma[i])*(tau-c.gamma[i])));
+        o += c.n[i]*exp(c.d[i]*lndelta + c.t[i]*lntau + (-c.cd[i]*exp(c.ld[i]*log(delta)) - c.eta[i]*sq(delta-c.epsilon[i]) - c.beta[i]*sq(tau-c.gamma[i])));
     }
     return o;
 }
@@ -67,9 +71,9 @@ int main()
     auto N = 100000;
     {
         typedef var vartype;
-        vartype tau = 0.5, delta = 0.7;  // the input variables
+        vartype tau = 0.5+N*1e-8, delta = 0.7;  // the input variables
 
-        auto coeff = get_coeff<vartype>();
+        auto coeff = get_coeff<double>();
         
         var dudtau, duddelta;
         auto startTime = std::chrono::high_resolution_clock::now();
@@ -81,49 +85,44 @@ int main()
             duddelta = dud(delta);
         }
         auto elap = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
-        std::cout << std::setprecision(20) << " " << elap << std::endl;
+        std::cout << std::setprecision(20) << "REV: " << elap << " " << dudtau/N <<  std::endl;
     }
     {
         // Define a Nth order dual type using HigherOrderDual<N> construct.
-        using vartype = HigherOrderDual<3>;
-        using vartypem1 = HigherOrderDual<2>;
-        using vartypem2 = HigherOrderDual<1>;
+        using vartype = dual;
 
-        // using vartype = dual;
-        // using vartypem1 = double;
-
-        vartype tau = 0.5, delta = 0.7;  // the input variables
-        auto coeff = get_coeff<vartype>();
-        vartypem1 dudtau, duddelta;
+        vartype tau = 0.5+N*1e-8, delta = 0.7;  // the input variables
+        auto coeff = get_coeff<double>();
+        double dudtau, duddelta;
         auto startTime = std::chrono::high_resolution_clock::now();
         auto N = 100000;
         for (auto rr = 0; rr < N; ++rr){
-            dudtau = derivative(alpha<vartype>, wrt(tau), at(tau, delta, coeff));
+            dudtau = derivative(alpha<vartype, double>, wrt(tau), at(tau, delta, coeff));
             // duddelta = derivative(alpha<vartype>, wrt(delta, delta), at(tau, delta, coeff));
         }
         auto elap = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
-        std::cout << std::setprecision(20) << " " << elap << std::endl;
+        std::cout << std::setprecision(20) << "FWD: " << elap << " " << val(dudtau/N) << std::endl;
     }
     {
         auto startTime = std::chrono::high_resolution_clock::now();
         auto coeff_comdbl = get_coeff<std::complex<double>>();   
         double dudtau_csd = 0;
         for (auto rr = 0; rr < N; ++rr){
-            std::complex<double> taustar(0.5, 1e-100), deltastar(0.7, 0);
+            std::complex<double> taustar(0.5+N*1e-8, 1e-100), deltastar(0.7, 0);
             dudtau_csd += (alpha<std::complex<double> >(taustar, deltastar, coeff_comdbl)/1e-100).imag();
         }
         auto elap = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
-        std::cout << std::setprecision(20) << " " << elap << " " << dudtau_csd/N << std::endl;
+        std::cout << std::setprecision(20) << "CSD: " << elap << " " << dudtau_csd/N << std::endl;
     }
     {
         auto startTime = std::chrono::high_resolution_clock::now();
         auto coeff_double = get_coeff<double>();   
         double alphar_double = 0;
         for (auto rr = 0; rr < N; ++rr){
-            alphar_double += alpha<double>(0.5, 0.7, coeff_double);
+            alphar_double += alpha<double>(0.5+N*1e-8, 0.7, coeff_double);
         }
         auto elap = std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - startTime).count()/static_cast<double>(N)*1e6;
-        std::cout << std::setprecision(20) << " " << elap << " " << alphar_double/N << std::endl;
+        std::cout << std::setprecision(20) << "FUN: " << elap << " " << alphar_double/N << std::endl;
     }
 
     // double v1 = autodiff::val(dudtau);
