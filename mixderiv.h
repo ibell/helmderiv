@@ -8,7 +8,7 @@
 #ifndef mixderiv_h
 #define mixderiv_h
 
-#include "Helm.h"
+#include "helm.h"
 
 inline bool Kronecker(std::size_t i, std::size_t j){ return i == j; }
 inline double POW2(double x){ return x*x; }

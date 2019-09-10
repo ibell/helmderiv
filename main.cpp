@@ -1,5 +1,4 @@
-
-#include "Helm.h"
+#include "helm.h"
 #include "mixderiv.h"
 
 #include <iostream>
