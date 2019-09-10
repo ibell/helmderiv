@@ -1,9 +1,9 @@
 cmake_minimum_required (VERSION 2.8.11)
 project (HelmDeriv)
 
-find_package(autodiff)
+# autodiff requires a c++17 enabled compiler
+set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_STANDARD 11)
 include_directories("${CMAKE_SOURCE_DIR}/externals/Eigen")
 include_directories("${CMAKE_SOURCE_DIR}/externals/autodiff")
 add_executable(main main.cpp)
@@ -18,5 +18,9 @@ foreach (snippet ${snippets})
 	message(STATUS "snippet_name = ${snippet_name}")
 
 	add_executable        (${snippet_exe} ${snippet})
-	target_link_libraries (${snippet_exe} autodiff::autodiff)
+
+	set_target_properties(${snippet_exe} PROPERTIES
+            CXX_STANDARD 17
+            CXX_EXTENSIONS OFF
+        )
 endforeach()
